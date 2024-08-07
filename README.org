@@ -1,0 +1,37 @@
+* org-sie - Simple Incremental Everything for Org
+:PROPERTIES:
+:TOC:      :include all :depth 2 :force (depth) :ignore (nothing) :local (nothing)
+:END:
+
+Use spaced repetition algorithms to prioritize tasks.
+:CONTENTS:
+- [[#usage][Usage]]
+- [[#installation][Installation]]
+- [[#configuration][Configuration]]
+:END:
+
+
+* Usage
+
+1. Start =org-agenda= and execute a custom agenda command to start the prirotization process.
+2. Rate each task in order of interest from 1 (least interesting) to 5 (most interesting).
+3. Tasks with low disarability are hidden during the next review process. Similarly tasks with a high score, appear more often.
+4. If a certain task is particularly appealing: do it immediately and abandon the prioritization effort.
+
+* Installation
+
+
+* Configuration
+
+You must create a custom agenda command to invoke the SIE priorization process:
+
+#+begin_src elisp
+  (setq org-agenda-custom-commands
+        '(("r" "SIE" tags-todo "-CANCELLED/"
+           ((org-agenda-overriding-header "SIE Review")
+            (org-agenda-skip-function 'org-review-agenda-skip)
+            (org-agenda-cmp-user-defined 'org-review-compare)
+            (org-agenda-sorting-strategy '(user-defined-down))
+            (org-review-last-property-name org-sie-last-review-property)
+            (org-review-next-property-name org-sie-next-review-property)))))
+#+end_src
