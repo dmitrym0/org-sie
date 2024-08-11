@@ -46,19 +46,46 @@
 ;; (setq org-review-last-property-name org-sie-last-review-property)
 ;; (setq org-review-next-property-name org-sie-next-review-property)
 
+
+
+;; use this to generate sie keybindings
+;; (key . function_name)
+(setq org-sie-interest-levels '((1 . "very-low")
+                      (2 . "low")
+                      (3 . "normal")
+                      (4 . "high")
+                      (5 . "very-high")))
+
 ;; "How important is this to you?"
 ;; The higher the value the highter the importance.
 ;; 1  - not important. Not very interested.
 ;; 5  - very important. Most is interested.
 ;; (inverse is passed to org-drill)
 (defun setup-org-sie-keybindings-for-agenda ()
+  (dolist (item org-sie-interest-levels)
+    (let ((key (car item))
+          (name (cdr item)))
+      (local-set-key (kbd (format "C-c d %s" key))
+                     (defalias (intern (concat "org-sie-" name))
+                                       `(lambda ()
+                                          "Very interested"
+                                          (interactive)
+                                          (org-sie-get-next-review-from-agenda key)
+                                          (org-agenda-next-item 1)))))))
+
+
+
+
+
+(defun setup-org-sie-keybindings-for-agenda ()
   "Set up a keymap for specifying interest during the review process."
-  (local-set-key (kbd "C-c d 1")
-                 (lambda ()
+  (local-set-key (kbd "C-c d 1") (defalias (intern (concat "sie-very-low"))
+                 `(lambda ()
+                   "Very interested"
                    (interactive)
                    (org-sie-get-next-review-from-agenda 5)
                    (org-agenda-next-item 1)
-                   ))
+                   )))
   (local-set-key (kbd "C-c d 2")
                  (lambda ()
                    (interactive)
@@ -83,15 +110,11 @@
                    (interactive)
                    (org-sie-get-next-review-from-agenda 1)
                    (org-agenda-next-item 1)
-                   ))
-  )
+                   )))
 
 
 
-(global-set-key (kbd "C-c d s")
-                (lambda ()
-                  (interactive)
-                  (org-sie-start-sie-on-heading)))
+(global-set-key (kbd "C-c d s") 'org-sie-start-sie-on-heading)
 
 (defun org-sie-start-sie-on-heading ()
   "Add current heading to org-sie review list."
