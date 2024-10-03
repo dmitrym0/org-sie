@@ -50,11 +50,11 @@
 
 ;; use this to generate sie keybindings
 ;; (key . function_name)
-(setq org-sie-interest-levels '((1 . "very-low")
-                      (2 . "low")
-                      (3 . "normal")
-                      (4 . "high")
-                      (5 . "very-high")))
+(setq org-sie-interest-levels '((1 . "very-interested")
+                      (2 . "interested")
+                      (3 . "neutral")
+                      (4 . "uninterested")
+                      (5 . "very-uninterested")))
 
 ;; "How important is this to you?"
 ;; The higher the value the highter the importance.
@@ -65,60 +65,22 @@
   (dolist (item org-sie-interest-levels)
     (let ((key (car item))
           (name (cdr item)))
+      (let ((local-key key))  ;; Capture the key locally for each lambda
+        (defalias (intern (concat "org-sie-" name))
+          (lambda ()
+            "How interested am I"
+            (interactive)
+            (org-sie-get-next-review-from-agenda local-key)
+            (org-agenda-next-item 1))))
       (local-set-key (kbd (format "C-c d %s" key))
-                     (defalias (intern (concat "org-sie-" name))
-                                       `(lambda ()
-                                          "Very interested"
-                                          (interactive)
-                                          (org-sie-get-next-review-from-agenda key)
-                                          (org-agenda-next-item 1)))))))
-
-
-
-
-
-(defun setup-org-sie-keybindings-for-agenda ()
-  "Set up a keymap for specifying interest during the review process."
-  (local-set-key (kbd "C-c d 1") (defalias (intern (concat "sie-very-low"))
-                 `(lambda ()
-                   "Very interested"
-                   (interactive)
-                   (org-sie-get-next-review-from-agenda 5)
-                   (org-agenda-next-item 1)
-                   )))
-  (local-set-key (kbd "C-c d 2")
-                 (lambda ()
-                   (interactive)
-                   (org-sie-get-next-review-from-agenda 4)
-                   (org-agenda-next-item 1)
-                   ))
-  (local-set-key (kbd "C-c d 3")
-                 (lambda ()
-                   (interactive)
-                   (org-sie-get-next-review-from-agenda 3)
-                   (org-agenda-next-item 1)
-                   ))
-  (local-set-key (kbd "C-c d 4")
-                 (lambda ()
-                   (interactive)
-                   (org-sie-get-next-review-from-agenda 2)
-                   (org-agenda-next-item 1)
-                   ))
-
-  (local-set-key (kbd "C-c d 5")
-                 (lambda ()
-                   (interactive)
-                   (org-sie-get-next-review-from-agenda 1)
-                   (org-agenda-next-item 1)
-                   )))
-
-
+                     (intern (concat "org-sie-" name))))))
 
 (global-set-key (kbd "C-c d s") 'org-sie-start-sie-on-heading)
 
 (defun org-sie-start-sie-on-heading ()
   "Add current heading to org-sie review list."
   (interactive)
+  (org-todo "TODO")
   (org-set-property org-sie-next-review-property "[2000-01-01 Mon]"))
 
 (defun org-sie-get-next-review-from-agenda (quality)
@@ -152,9 +114,23 @@ QUALITY is a number 0-5 inclusive.
     (setq org-drill-sm5-optimal-factor-matrix new-ofmatrix)
     (org-drill-store-item-data next-interval repetitions failures total-repeats meanq ease)
 
-    (let ((next-review (ts-format "[%Y-%m-%d %a]" new-time)))
+    (let ((next-review (ts-format "[%Y-%m-%d %a]" (org-sie-update-time-if-today new-time))))
       (org-set-property org-sie-next-review-property next-review)
       next-review)))
+
+
+
+;; if we haven't reviewed for a while, org-drill will set the date to "later today".
+;; don't want that. want that at least for tomorow.
+(defun org-sie-update-time-if-today (ts)
+  "If the given TIME is today, set it to tomorrow."
+  (let* ((ts-tomorrow (ts-adjust 'day 1 (ts-now)))
+         (ts-diff (ts-difference ts-tomorrow ts)))
+    (message "ts-diff: %s" ts-diff)
+    (if ( > ts-diff 90000)
+        (ts-adjust 'second (+ 100 ts-diff) ts)
+      ts)))
+
 
 
 (add-hook 'org-agenda-mode-hook 'setup-org-sie-keybindings-for-agenda)
